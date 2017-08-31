@@ -1,10 +1,9 @@
 package org.geotools.tutorial.quickstart;
 
 import java.io.File;
+import java.util.Map;
 
-import org.geotools.data.CachingFeatureSource;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.FileDataStoreFinder;
+import org.geotools.data.*;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.map.FeatureLayer;
 import org.geotools.map.Layer;
@@ -28,12 +27,15 @@ public class Quickstart {
     public static void main(String[] args) throws Exception {
         // display a data store file chooser dialog for shapefiles
         File file = JFileDataStoreChooser.showOpenFile("shp", null);
-        if (file == null) {
-            return;
-        }
 
-        FileDataStore store = FileDataStoreFinder.getDataStore(file);
-        SimpleFeatureSource featureSource = store.getFeatureSource();
+        Map<String,Object> params = new HashMap<>();
+        params.put( "url", file.toURI().toURL() );
+        params.put( "create spatial index", false );
+        params.put( "memory mapped buffer", false );
+        params.put( "charset", "ISO-8859-1" );
+
+        DataStore store = DataStoreFinder.getDataStore( params );
+        SimpleFeatureSource featureSource = store.getFeatureSource( store.getTypeNames()[0] );
 
         // CachingFeatureSource is deprecated as experimental (not yet production ready)
         CachingFeatureSource cache = new CachingFeatureSource(featureSource);
