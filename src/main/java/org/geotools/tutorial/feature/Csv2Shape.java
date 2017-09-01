@@ -57,11 +57,9 @@ public class Csv2Shape {
          *
          * See also the createFeatureType method below for another, more flexible approach.
          */
-        final SimpleFeatureType TYPE = DataUtilities.createType("Location",
-                "the_geom:Point:srid=4326," + // <- the geometry attribute: Point type
-                        "name:String," +   // <- a String attribute
-                        "number:Integer"   // a number attribute
-        );
+
+        final SimpleFeatureType TYPE = createFeatureType();
+
         System.out.println("TYPE:"+TYPE);
 
         // docs break feature collection
@@ -212,6 +210,36 @@ public class Csv2Shape {
         }
 
         return newFile;
+    }
+
+    // end get shapefile
+
+    // start createFeatureType
+
+    /**
+     * Here is how you can use a SimpleFeatureType builder to create the schema for your shapefile
+     * dynamically.
+     * <p>
+     * This method is an improvement on the code used in the main method above (where we used
+     * DataUtilities.createFeatureType) because we can set a Coordinate Reference System for the
+     * FeatureType and a a maximum field length for the 'name' field dddd
+     */
+
+    private static SimpleFeatureType createFeatureType() {
+
+        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        builder.setName("Location");
+        builder.setCRS(DefaultGeographicCRS.WGS84); // <- Coordinate reference system
+
+        // add attributes in order
+        builder.add("the_geom", Point.class);
+        builder.length(15).add("Name", String.class); // <- 15 chars width for name field
+        builder.add("number",Integer.class);
+
+        // build the type
+        final SimpleFeatureType LOCATION = builder.buildFeatureType();
+
+        return LOCATION;
     }
 
 }
