@@ -49,6 +49,59 @@ public class Csv2Shape {
         if (file == null) {
             return;
         }
+
+        /*
+         * We use the DataUtilities class to create a FeatureType that will describe the data in our
+         * shapefile.
+         *
+         * See also the createFeatureType method below for another, more flexible approach.
+         */
+        final SimpleFeatureType TYPE = DataUtilities.createType("Location",
+                "the_geom:Point:srid=4326," + // <- the geometry attribute: Point type
+                        "name:String," +   // <- a String attribute
+                        "number:Integer"   // a number attribute
+        );
+        System.out.println("TYPE:"+TYPE);
+
+        /*
+         * A list to collect features as we create them.
+         */
+        List<SimpleFeature> features = new ArrayList<>();
+
+        /*
+         * GeometryFactory will be used to create the geometry attribute of each feature,
+         * using a Point object for the location.
+         */
+        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
+
+        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(TYPE);
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            /* First line of the data file is the header */
+            String line = reader.readLine();
+            System.out.println("Header: " + line);
+
+            for (line = reader.readLine(); line != null; line = reader.readLine()) {
+                if (line.trim().length() > 0) { // skip blank lines
+                    String tokens[] = line.split("\\,");
+
+                    double latitude = Double.parseDouble(tokens[0]);
+                    double longitude = Double.parseDouble(tokens[1]);
+                    String name = tokens[2].trim();
+                    int number = Integer.parseInt(tokens[3].trim());
+
+                    /* Longitude (= x coord) first ! */
+                    Point point = geometryFactory.createPoint(new Coordinate(longitude, latitude));
+
+                    featureBuilder.add(point);
+                    featureBuilder.add(name);
+                    featureBuilder.add(number);
+                    SimpleFeature feature = featureBuilder.buildFeature(null);
+                    features.add(feature);
+                }
+            }
+        }
+
     }
 }
 
