@@ -1,6 +1,7 @@
 package org.geotools.tutorial.quickstart;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.geotools.data.*;
@@ -28,7 +29,7 @@ public class Quickstart {
         // display a data store file chooser dialog for shapefiles
         File file = JFileDataStoreChooser.showOpenFile("shp", null);
 
-        Map<String,Object> params = new HashMap<>();
+        Map<String,Object> params = new HashMap<String, Object>();
         params.put( "url", file.toURI().toURL() );
         params.put( "create spatial index", false );
         params.put( "memory mapped buffer", false );
@@ -43,7 +44,6 @@ public class Quickstart {
         // Create a map content and add our shapefile to it
         MapContent map = new MapContent();
         map.setTitle("Quickstart");
-
         Style style = SLD.createSimpleStyle(featureSource.getSchema());
         Layer layer = new FeatureLayer(featureSource, style);
         map.addLayer(layer);
