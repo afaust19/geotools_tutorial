@@ -96,7 +96,7 @@ public class CRSLab {
         JToolBar toolbar = mapFrame.getToolBar();
         toolbar.addSeparator();
         toolbar.add(new JButton(new ValidateGeometryAction()));
-        toolbar.add(new JButton(new ExportShapeFileAction()));
+        toolbar.add(new JButton(new ExportShapefileAction()));
 
         // Display the map frame; when it is closed the application will exit
         mapFrame.setSize(800, 600);
@@ -152,5 +152,87 @@ public class CRSLab {
         featureCollection.accepts(visitor, progress);
         return visitor.numInvalidGeometries;
     }
+
+    // docs end validate
+    /**
+     * This class performs the task of exporting the features to a new shapefile using the map
+     * projection that they are currently displayed in. It also supplies the name and tool tip for
+     * the toolbar button.
+     */
+
+    class ExportShapefileAction extends SafeAction {
+        ExportShapefileAction() {
+            super("Export...");
+            putValue(Action.SHORT_DESCRIPTION, "Export using current crs");
+        }
+        public void action(ActionEvent e) throws Throwable {
+            exportToShapefile();
+        }
+    }
+
+    private void exportToShapefile() throws Exception {
+        SimpleFeatureType schema = featureSource.getSchema();
+        JFileDataStoreChooser chooser = new JFileDataStoreChooser("shp");
+        chooser.setDialogTitle("Save reprojected shapefile");
+        chooser.setSaveFile(sourceFile);
+        int returnVal = chooser.showSaveDialog(null);
+        if (returnVal != JFileDataStoreChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        if (file.equals(sourceFile)) {
+            JOptionPane.showMessageDialog(null, "Cannot replace " + file);
+            return;
+        }
+
+        CoordinateReferenceSystem dataCRS = schema.getCoordinateReferenceSystem();
+        CoordinateReferenceSystem worldCRS = map.getCoordinateReferenceSystem();
+        boolean lenient = true; // allow for some error due to difficult datums
+        MathTransform transform = CRS.findMathTransform(dataCRS, worldCRS, lenient);
+
+        SimpleFeatureCollection featureCollection = featureSource.getFeatures();
+
+        DataStoreFactorySpi factory = new ShapefileDataStoreFactory();
+        Map<String, Serializable> create = new HashMap<>();
+        create.put("url", file.toURI().toURL());
+        create.put("create spatial index", Boolean.TRUE);
+        DataStore dataStore = factory.createDataStore(create);
+        SimpleFeatureType featureType = SimpleFeatureTypeBuilder.retype(schema, worldCRS);
+        dataStore.createSchema(featureType);
+
+        // Get the name of the new Shapefile, which will be used to open the FeatureWriter
+        String createdName = dataStore.getTypeNames()[0];
+
+        Transaction transaction = new DefaultTransaction("Reproject");
+        try ( FeatureWriter<SimpleFeatureType, SimpleFeature> writer =
+                        dataStore.getFeatureWriterAppend(createdName, transaction);
+              SimpleFeatureIterator iterator =featureCollection.features()) {
+            while (iterator.hasNext()) {
+                // copy the contents of each feature and transform the geometry
+                SimpleFeature feature = iterator.next();
+                SimpleFeature copy = writer.next();
+                copy.setAttributes(feature.getAttributes());
+
+                Geometry geometry = (Geometry) feature.getDefaultGeometry();
+                Geometry geometry2 = JTS.transform(geometry, transform);
+
+                copy.setDefaultGeometry(geometry2);
+                writer.write();
+            }
+
+            transaction.commit();
+            JOptionPane.showMessageDialog(null, "Export to shapefile complete");
+        } catch (Exception problem) {
+            problem.printStackTrace();
+            transaction.rollback();
+            JOptionPane.showMessageDialog(null, "Export to shapefile failed");
+        } finally {
+            transaction.close();
+        }
+
+
+    }
+
+
 
 }
