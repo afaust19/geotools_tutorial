@@ -179,6 +179,41 @@ public class Csv2Shape {
 
     // end main
 
+    // start get shapefile
+
+    /**
+     * Prompt the user for the name and path to use for the output shapefile
+     *
+     * @param csvFile
+     *            the input csv file used to create a default shapefile name
+     *
+     * @return name and path for the shapefile as a new File object
+     */
+
+    private static File getNewShapeFile(File csvFile) {
+        String path = csvFile.getAbsolutePath();
+        String newPath = path.substring(0, path.length() - 4) + ".shp";
+
+        JFileDataStoreChooser chooser = new JFileDataStoreChooser("shp");
+        chooser.setDialogTitle("Save shapefile");
+        chooser.setSelectedFile(new File(newPath));
+
+        int returnVal = chooser.showSaveDialog(null);
+
+        if (returnVal != JFileDataStoreChooser.APPROVE_OPTION) {
+            // the user cancelled the dialog
+            System.exit(0);
+        }
+
+        File newFile = chooser.getSelectedFile();
+        if (newFile.equals(csvFile)) {
+            System.out.println("Error: cannot replace " + csvFile);
+            System.exit(0);
+        }
+
+        return newFile;
     }
+
+}
 
 
