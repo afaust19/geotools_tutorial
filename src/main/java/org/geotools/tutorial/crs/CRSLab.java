@@ -62,6 +62,17 @@ public class CRSLab {
         lab.displayShapefile();
     }
 
+    // docs end main
+
+    /**
+     * This method:
+     * - prompts the user for a shapefile to display
+     * - creates a JMapFrame with custom toolbar buttons
+     * - displays the shapefile
+     */
+
+    // docs start display
+
     private void displayShapefile() throws Exception {
         sourceFile = JFileDataStoreChooser.showOpenFile("shp", null);
         if (sourceFile == null) {
@@ -90,6 +101,56 @@ public class CRSLab {
         // Display the map frame; when it is closed the application will exit
         mapFrame.setSize(800, 600);
         mapFrame.setVisible(true);
+    }
+
+    // docs end display
+
+    /**
+     * This class performs the task of checking that the Geometry of each feature is topologically
+     * valid and reports on the results. It also supplies the name and tool tip.
+     */
+
+    // docs start validate action
+
+    class ValidateGeometryAction extends SafeAction {
+        ValidateGeometryAction() {
+            super("Validate geometry");
+            putValue(Action.SHORT_DESCRIPTION, "Check each geometry");
+        }
+        public void action(ActionEvent e) throws Throwable {
+            int numInvalid = validateFeatureGeometry(null);
+            String msg;
+            if (numInvalid == 0) {
+                msg = "All feature geometries are valid";
+            } else {
+                msg = "Invalid geometries: " + numInvalid;
+            }
+            JOptionPane.showMessageDialog(null, msg, "Geometry results",
+                            JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private int validateFeatureGeometry(ProgressListener progress) throws Exception {
+        final SimpleFeatureCollection featureCollection = featureSource.getFeatures();
+
+        // Rather than use an iterator, create a FeatureVisitor to check each feature
+        class ValidationVisitor implements FeatureVisitor {
+            public int numInvalidGeometries = 0;
+            public void visit(Feature f) {
+                SimpleFeature feature = (SimpleFeature) f;
+                Geometry geom = (Geometry) feature.getDefaultGeometry();
+                if (geom != null && !geom.isValid()) {
+                    numInvalidGeometries++;
+                    System.out.println("Invalid Geometry: " + feature.getID());
+                }
+            }
+        }
+
+        ValidationVisitor visitor = new ValidationVisitor();
+
+        // Pass visitor and the progress bar to feature collection
+        featureCollection.accepts(visitor, progress);
+        return visitor.numInvalidGeometries;
     }
 
 }
