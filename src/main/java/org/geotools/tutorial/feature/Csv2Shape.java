@@ -102,6 +102,25 @@ public class Csv2Shape {
             }
         }
 
+        /*
+         * Get an output file name and create the new shapefile
+         */
+        File newFile = getNewShapeFile(file);
+
+        ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
+
+        Map<String, Serializable> params = new HashMap<>();
+        params.put("url", newFile.toURI().toURL());
+        params.put("create spatial index", Boolean.TRUE);
+
+        ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
+
+        /*
+         * TYPE is used as a template to describe the file contents
+         */
+        newDataStore.createSchema(TYPE);
+
+
     }
 }
 
